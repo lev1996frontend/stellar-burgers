@@ -39,6 +39,7 @@ export const checkUserAuth = createAsyncThunk(
         .catch(() => {
           deleteCookie('accessToken');
           localStorage.clear();
+          throw new Error('Ошибка доступа');
         })
         .finally(() => {
           dispatch(authChecked());
@@ -50,20 +51,23 @@ export const checkUserAuth = createAsyncThunk(
 );
 
 export const logoutUser = createAsyncThunk('user/logoutUser', async () => {
-  await logoutApi();
+  const data = await logoutApi();
   deleteCookie('accessToken');
   localStorage.clear();
+  return data;
 });
 
 interface TUserState {
   isAuthChecked: boolean;
   data: TUser | null;
+  isLoading: boolean;
   error: string;
 }
 
-const initialState: TUserState = {
+export const initialState: TUserState = {
   isAuthChecked: false,
   data: null,
+  isLoading: false,
   error: ''
 };
 
@@ -86,25 +90,32 @@ export const userSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(loginUser.pending, (state) => {
+        state.isLoading = true;
         state.error = '';
       })
       .addCase(loginUser.rejected, (state, action) => {
-        state.error = `Ошибка при логировании: ${action.error.message}`;
+        state.isLoading = false;
+        state.error = `${action.error.message}`;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.data = action.payload;
+        state.isLoading = false;
         state.error = '';
       })
+
       .addCase(updateUser.fulfilled, (state, action) => {
         state.data = action.payload;
       })
-      .addCase(logoutUser.fulfilled, (state) => {
-        state.data = null;
+
+      .addCase(logoutUser.fulfilled, (state, action) => {
+        if (action.payload.success) {
+          state.data = null;
+        }
       });
   }
 });
 
 export const { authChecked, setUser } = userSlice.actions;
-export const userReducers = userSlice.reducer;
+export const userReducer = userSlice.reducer;
 export const { userDataSelector, isAuthCheckedSelector, errorSelector } =
   userSlice.selectors;

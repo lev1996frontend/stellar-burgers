@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect, FC, useCallback } from 'react';
+import { useState, useRef, useEffect, FC } from 'react';
 import { useInView } from 'react-intersection-observer';
+import { Preloader } from '@ui';
+import { ErrorMessage } from '@components';
 
 import { TTabMode } from '@utils-types';
 import { BurgerIngredientsUI } from '../ui/burger-ingredients';
@@ -8,12 +10,15 @@ import { useSelector } from '../../services/store';
 
 import {
   selectIngredients,
-  getIngredients
+  selectError,
+  selectIsLoading
 } from '../../features/ingredientsSlice';
 
 export const BurgerIngredients: FC = () => {
   /** TODO: взять переменные из стора */
   const ingredients = useSelector(selectIngredients);
+  const isIngredientsLoading = useSelector(selectIsLoading);
+  const ingredientsErrorMessage = useSelector(selectError);
 
   const filterIngredients = (typeIngredients: string) => {
     if (ingredients) {
@@ -65,6 +70,14 @@ export const BurgerIngredients: FC = () => {
     if (tab === 'sauce')
       titleSaucesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  if (isIngredientsLoading) {
+    return <Preloader />;
+  }
+
+  if (ingredientsErrorMessage) {
+    return <ErrorMessage error={ingredientsErrorMessage} />;
+  }
 
   return (
     <BurgerIngredientsUI
